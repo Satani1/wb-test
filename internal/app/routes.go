@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/gorilla/mux"
+	"net/http"
 )
 
 func (app *Application) Routes() *mux.Router {
@@ -12,6 +13,7 @@ func (app *Application) Routes() *mux.Router {
 	rMux.HandleFunc("/login", app.SignIn)
 	rMux.HandleFunc("/register", app.SignUp)
 	//rMux.HandleFunc("/tasks",)
+	rMux.Handle("/test", app.RequireAuth(http.HandlerFunc(app.Test)))
 
 	//loader
 	// me

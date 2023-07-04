@@ -23,6 +23,7 @@ func (app *Application) SignUp(w http.ResponseWriter, r *http.Request) {
 		hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		//create the user
@@ -64,12 +65,14 @@ func (app *Application) SignUp(w http.ResponseWriter, r *http.Request) {
 		ts, err := template.ParseFiles("./web/html/register.html")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		//exec html page
 		err = ts.Execute(w, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
 }
@@ -87,11 +90,12 @@ func (app *Application) SignIn(w http.ResponseWriter, r *http.Request) {
 			err := bcrypt.CompareHashAndPassword([]byte(userLoader.Password), []byte(password))
 			if err != nil {
 				http.Error(w, "Invalid password", http.StatusBadRequest)
+				return
 			}
 
 			//generate jwt token
 			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-				"sub": userLoader.ID,
+				"sub": userLoader.Username,
 				"exp": time.Now().Add(time.Hour).Unix(),
 			})
 
@@ -99,12 +103,13 @@ func (app *Application) SignIn(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Println(err)
 				http.Error(w, "Failed to create token", http.StatusInternalServerError)
+				return
 			}
 
 			//send token back
 			//cookie
 			http.SetCookie(w, &http.Cookie{
-				Name:     "Auth",
+				Name:     "Authorization",
 				Value:    tokenString,
 				Path:     "",
 				MaxAge:   3600,
@@ -124,18 +129,29 @@ func (app *Application) SignIn(w http.ResponseWriter, r *http.Request) {
 		} else {
 			log.Println(err)
 			http.Error(w, "Cant find any user with this username", http.StatusBadRequest)
+			return
 		}
 	} else {
 		//find html template
 		ts, err := template.ParseFiles("./web/html/login.html")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		//exec html page
 		err = ts.Execute(w, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
+	}
+}
+
+func (app *Application) Test(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write([]byte("logged in")); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
