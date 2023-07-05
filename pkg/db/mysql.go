@@ -29,9 +29,9 @@ func (r *Repository) Close() {
 
 // InsertLoader insert a row into Loader table
 func (r *Repository) InsertLoader(loader models.Loader) (int, error) {
-	stmt := `INSERT INTO loadertable (username, password) values (?,?)`
+	stmt := `INSERT INTO loadertable (username, password, MaxWeight, Drunk, Fatigue, Salary) values (?,?,?,?,?,?)`
 
-	result, err := r.db.Exec(stmt, loader.Username, loader.Password)
+	result, err := r.db.Exec(stmt, loader.Username, loader.Password, loader.MaxWeight, loader.Drunk, loader.Fatigue, loader.Salary)
 	if err != nil {
 		return -1, err
 	}
@@ -45,11 +45,11 @@ func (r *Repository) InsertLoader(loader models.Loader) (int, error) {
 
 // GetLoader return Loader struct by a username from table
 func (r *Repository) GetLoader(username string) (*models.Loader, error) {
-	stmt := `select username,password from loadertable where username = ?`
+	stmt := `select ID, MaxWeight, Drunk, Fatigue, Salary, username, password from loadertable where username = ?`
 
 	row := r.db.QueryRow(stmt, username)
 	var loader models.Loader
-	if err := row.Scan(&loader.Username, &loader.Password); err != nil {
+	if err := row.Scan(&loader.ID, &loader.MaxWeight, &loader.Drunk, &loader.Fatigue, &loader.Salary, &loader.Username, &loader.Password); err != nil {
 		return nil, err
 	}
 
@@ -58,9 +58,9 @@ func (r *Repository) GetLoader(username string) (*models.Loader, error) {
 
 // InsertCustomer insert a row into Customer table
 func (r *Repository) InsertCustomer(customer models.Customer) (int, error) {
-	stmt := `INSERT INTO customertable (username, password) values (?,?)`
+	stmt := `INSERT INTO customertable (username, password,capital) values (?,?,?)`
 
-	result, err := r.db.Exec(stmt, customer.Username, customer.Password)
+	result, err := r.db.Exec(stmt, customer.Username, customer.Password, customer.StartCapital)
 	if err != nil {
 		return -1, err
 	}
@@ -74,13 +74,76 @@ func (r *Repository) InsertCustomer(customer models.Customer) (int, error) {
 
 // GetCustomer return Customer struct by a username from table
 func (r *Repository) GetCustomer(username string) (*models.Customer, error) {
-	stmt := `select username,password from customertable where username = ?`
+	stmt := `select ID,capital,username,password from customertable where username = ?`
 
 	row := r.db.QueryRow(stmt, username)
 	var customer models.Customer
-	if err := row.Scan(&customer.Username, &customer.Password); err != nil {
+	if err := row.Scan(&customer.ID, &customer.StartCapital, &customer.Username, &customer.Password); err != nil {
 		return nil, err
 	}
 
 	return &customer, nil
+}
+
+// InsertTask insert a row into tasks table
+func (r *Repository) InsertTask(task models.Task) error {
+	stmt := `INSERT INTO tasks (name, weight) values (?,?)`
+
+	if _, err := r.db.Exec(stmt, task.Item, task.Weight); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GetTask return a one task by ID
+func (r *Repository) GetTask(id int) (*models.Task, error) {
+	return nil, nil
+}
+
+// GetTaskAvailable return all task that available
+func (r *Repository) GetTaskAvailable() ([]models.Task, error) {
+	stmt := `select ID, name, weight from tasks where done = 0`
+	var tasks []models.Task
+
+	rows, err := r.db.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var task models.Task
+
+		err := rows.Scan(&task.ID, &task.Item, &task.Weight)
+		if err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
+}
+
+// GetTaskCompleted return tasks that completed by loader (need loader's ID)
+func (r *Repository) GetTaskCompleted(id int) ([]models.Task, error) {
+	stmt := `select ID, name, weight from tasks where done = ?`
+	var tasks []models.Task
+
+	rows, err := r.db.Query(stmt, id)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var task models.Task
+
+		err := rows.Scan(&task.ID, &task.Item, &task.Weight)
+		if err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	return tasks, nil
 }

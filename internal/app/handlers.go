@@ -2,12 +2,15 @@ package app
 
 import (
 	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 	_ "golang.org/x/crypto/bcrypt"
 	"html/template"
 	"log"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 	"wb-test/pkg/models"
 )
@@ -28,15 +31,21 @@ func (app *Application) SignUp(w http.ResponseWriter, r *http.Request) {
 
 		//create the user
 		if role == "loader" {
-			loader := models.Loader{
-				ID:        0,
-				Username:  username,
-				Password:  string(hash),
-				MaxWeight: 0,
-				Drunk:     false,
-				Fatigue:   0,
-				Salary:    0,
+			//loader := models.Loader{
+			//	ID:        0,
+			//	Username:  username,
+			//	Password:  string(hash),
+			//	MaxWeight: 0,
+			//	Drunk:     false,
+			//	Fatigue:   0,
+			//	Salary:    0,
+			//}
+			var loader models.Loader
+			if err := gofakeit.Struct(&loader); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
+			loader.Username, loader.Password = username, string(hash)
 
 			id, err := app.DB.InsertLoader(loader)
 			if err != nil {
@@ -45,11 +54,9 @@ func (app *Application) SignUp(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(id)
 		} else {
 			customer := models.Customer{
-				ID:           0,
 				Username:     username,
 				Password:     string(hash),
-				StartCapital: 0,
-				Tasks:        models.Task{},
+				StartCapital: gofakeit.Number(10000, 30000),
 			}
 
 			id, err := app.DB.InsertCustomer(customer)
@@ -181,5 +188,130 @@ func (app *Application) Test(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write([]byte("logged in")); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+}
+
+func (app *Application) ProfilePage(w http.ResponseWriter, r *http.Request) {
+	userName := r.Header.Get("user")
+	userRole := r.Header.Get("role")
+
+	switch userRole {
+	case "loader":
+		userLoader, err := app.DB.GetLoader(userName)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		//find template
+		ts, err := template.ParseFiles("./web/html/profileLoader.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		//execute html template with user data
+		err = ts.Execute(w, userLoader)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	case "customer":
+		userCustomer, err := app.DB.GetCustomer(userName)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		//find template
+		ts, err := template.ParseFiles("./web/html/profileCustomer.html.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		//execute html template with user data
+		err = ts.Execute(w, userCustomer)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	default:
+		http.Error(w, "No role", http.StatusBadRequest)
+		return
+	}
+}
+
+func (app *Application) GenerateTasks(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		numberOfTasks := rand.Intn(10)
+
+		for i := 0; i < numberOfTasks; i++ {
+			//generate random task
+			var task models.Task
+			if err := gofakeit.Struct(&task); err != nil {
+				log.Println(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			//insert into DB
+			if err := app.DB.InsertTask(task); err != nil {
+				log.Println(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		if _, err := w.Write([]byte("Tasks are created")); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		user := r.Header.Get("user")
+		userID, err := strconv.Atoi(user)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		userRole := r.Header.Get("role")
+		var tasksAvailable struct {
+			Tasks []models.Task
+		}
+
+		switch userRole {
+		case "loader":
+			tasks, err := app.DB.GetTaskCompleted(userID)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			tasksAvailable.Tasks = tasks
+		case "customer":
+			tasks, err := app.DB.GetTaskAvailable()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			tasksAvailable.Tasks = tasks
+		}
+
+		//find template
+		ts, err := template.ParseFiles("./web/html/tasks.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		//execute html template with user data
+		err = ts.Execute(w, tasksAvailable)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
 	}
 }

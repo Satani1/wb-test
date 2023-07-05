@@ -9,3 +9,5 @@ require (
 )
 
 require github.com/golang-jwt/jwt v3.2.2+incompatible
+
+require github.com/brianvoe/gofakeit/v6 v6.22.0 // indirect
