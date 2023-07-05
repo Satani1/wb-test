@@ -120,12 +120,40 @@ func (app *Application) SignIn(w http.ResponseWriter, r *http.Request) {
 
 			w.WriteHeader(http.StatusOK)
 
-		} else if _, err := app.DB.GetCustomer(username); err == nil {
+		} else if userCustomer, err := app.DB.GetCustomer(username); err == nil {
 			//compare pass with pass in table
+			err := bcrypt.CompareHashAndPassword([]byte(userCustomer.Password), []byte(password))
+			if err != nil {
+				http.Error(w, "Invalid password", http.StatusBadRequest)
+				return
+			}
 
 			//generate jwt token
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+				"sub": userCustomer.Username,
+				"exp": time.Now().Add(time.Hour).Unix(),
+			})
+
+			tokenString, err := token.SignedString([]byte(app.Secret))
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "Failed to create token", http.StatusInternalServerError)
+				return
+			}
 
 			//send token back
+			//cookie
+			http.SetCookie(w, &http.Cookie{
+				Name:     "Authorization",
+				Value:    tokenString,
+				Path:     "",
+				MaxAge:   3600,
+				HttpOnly: true,
+				Secure:   true,
+				SameSite: http.SameSiteLaxMode,
+			})
+
+			w.WriteHeader(http.StatusOK)
 		} else {
 			log.Println(err)
 			http.Error(w, "Cant find any user with this username", http.StatusBadRequest)

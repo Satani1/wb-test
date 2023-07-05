@@ -47,6 +47,12 @@ func (app *Application) RequireAuth(next http.Handler) http.Handler {
 
 				// Continue
 				next.ServeHTTP(w, r)
+			} else if userCustomer, err := app.DB.GetCustomer(sub); err == nil {
+				// Attach to request
+				r.Header.Set("user", userCustomer.Username)
+
+				// Continue
+				next.ServeHTTP(w, r)
 			} else {
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
