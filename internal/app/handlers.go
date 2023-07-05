@@ -192,7 +192,7 @@ func (app *Application) Test(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) ProfilePage(w http.ResponseWriter, r *http.Request) {
-	userName := r.Header.Get("user")
+	userName := r.Header.Get("name")
 	userRole := r.Header.Get("role")
 
 	switch userRole {
@@ -218,21 +218,35 @@ func (app *Application) ProfilePage(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 	case "customer":
+
 		userCustomer, err := app.DB.GetCustomer(userName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		loaders, err := app.DB.GetLoaders()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		var cUser struct {
+			Customer *models.Customer
+			Loaders  []models.Loader
+		}
+
+		cUser.Customer, cUser.Loaders = userCustomer, loaders
+
 		w.Header().Set("Content-Type", "text/html")
 		//find template
-		ts, err := template.ParseFiles("./web/html/profileCustomer.html.html")
+		ts, err := template.ParseFiles("./web/html/profileCustomer.html")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		//execute html template with user data
-		err = ts.Execute(w, userCustomer)
+		err = ts.Execute(w, cUser)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -314,4 +328,8 @@ func (app *Application) GenerateTasks(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 	}
+}
+
+func (app *Application) Start(w http.ResponseWriter, r *http.Request) {
+
 }

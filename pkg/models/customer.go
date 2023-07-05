@@ -5,5 +5,4 @@ type Customer struct {
 	Username     string
 	Password     string
 	StartCapital int
-	Tasks        Task
 }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Orders</title>
+    <title>Me</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -21,6 +21,11 @@
         h1 {
             text-align: center;
             font-size: 36px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            text-align: center;
+            font-size: 24px;
             margin-bottom: 20px;
         }
 
@@ -52,16 +57,36 @@
     <table>
         <tr>
             <th>Username</th>
-            <td>{{.Username}}</td>
+            <td>{{.Customer.Username}}</td>
         </tr>
         <tr>
             <th>Капитал</th>
-            <td>{{.StartCapital}}</td>
+            <td>{{.Customer.StartCapital}}</td>
         </tr>
+    </table>
+
+    <h2>Список грузчиков</h2>
+    <table>
         <tr>
-            <th>Список всех грузчиков</th>
-            <td></td>
+            <th>ID</th>
+            <th>Имя</th>
+            <th>Макс Вес</th>
+            <th>Пьянство</th>
+            <th>Усталость</th>
+            <th>Зарплата</th>
         </tr>
+    </table>
+    <table>
+    {{range $index, $element := .Loaders}}
+        <tr>
+            <td>{{$element.ID}}</td>
+            <td>{{$element.Username}}</td>
+            <td>{{$element.MaxWeight}} кг</td>
+            <td>{{$element.Drunk}} </td>
+            <td>{{$element.Fatigue}} %</td>
+            <td>{{$element.Salary}} руб.</td>
+        </tr>
+    {{end}}
     </table>
 </div>
 </body>

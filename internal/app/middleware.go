@@ -49,6 +49,7 @@ func (app *Application) RequireAuth(next http.Handler) http.Handler {
 				if userLoader, err := app.DB.GetLoader(sub); err == nil {
 					// Attach to request
 					r.Header.Set("user", strconv.Itoa(userLoader.ID))
+					r.Header.Set("name", userLoader.Username)
 					r.Header.Set("role", "loader")
 
 					// Continue
@@ -56,6 +57,7 @@ func (app *Application) RequireAuth(next http.Handler) http.Handler {
 				} else if userCustomer, err := app.DB.GetCustomer(sub); err == nil {
 					// Attach to request
 					r.Header.Set("user", strconv.Itoa(userCustomer.ID))
+					r.Header.Set("name", userCustomer.Username)
 					r.Header.Set("role", "customer")
 					// Continue
 					next.ServeHTTP(w, r)

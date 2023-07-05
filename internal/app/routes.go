@@ -12,16 +12,16 @@ func (app *Application) Routes() *mux.Router {
 	rMux.HandleFunc("/login", app.SignIn)
 	rMux.HandleFunc("/register", app.SignUp)
 	rMux.Handle("/test", app.RequireAuth(http.HandlerFunc(app.Test)))
-	rMux.Handle("/tasks", app.RequireAuth(http.HandlerFunc(app.GenerateTasks)))
 
 	//private
 	//loader and customer profile page
 	rMux.Handle("/me", app.RequireAuth(http.HandlerFunc(app.ProfilePage)))
 
-	// available tasks for loader
+	//generate OR view tasks for loader OR customer
+	rMux.Handle("/tasks", app.RequireAuth(http.HandlerFunc(app.GenerateTasks)))
 
-	// complete tasks for customer
 	// start the game
+	rMux.Handle("/start", app.RequireAuth(http.HandlerFunc(app.Start)))
 
 	return rMux
 }

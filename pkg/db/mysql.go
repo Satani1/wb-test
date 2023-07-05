@@ -56,6 +56,29 @@ func (r *Repository) GetLoader(username string) (*models.Loader, error) {
 	return &loader, nil
 }
 
+// GetLoaders return all exist loaders
+func (r *Repository) GetLoaders() ([]models.Loader, error) {
+	stmt := `select ID, username, MaxWeight, Drunk, Fatigue, Salary from loadertable`
+	var loaders []models.Loader
+
+	rows, err := r.db.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var loader models.Loader
+
+		err := rows.Scan(&loader.ID, &loader.Username, &loader.MaxWeight, &loader.Drunk, &loader.Fatigue, &loader.Salary)
+		if err != nil {
+			return nil, err
+		}
+
+		loaders = append(loaders, loader)
+	}
+	return loaders, nil
+}
+
 // InsertCustomer insert a row into Customer table
 func (r *Repository) InsertCustomer(customer models.Customer) (int, error) {
 	stmt := `INSERT INTO customertable (username, password,capital) values (?,?,?)`
