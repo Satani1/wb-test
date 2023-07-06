@@ -150,10 +150,18 @@ func (app *Application) Start(w http.ResponseWriter, r *http.Request) {
 			//change loaders fatigue
 			//update loaders win done tasks
 			for id, loader := range userLoaders {
-				if err := app.DB.UpdateLoader(loader.Fatigue+20, id); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
+				if loader.Fatigue+20 >= 100 {
+					if err := app.DB.UpdateLoader(100, id); err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+				} else {
+					if err := app.DB.UpdateLoader(loader.Fatigue+20, id); err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
 				}
+
 				if win {
 					if err := app.DB.UpdateTask(taskID, id); err != nil {
 						http.Error(w, err.Error(), http.StatusInternalServerError)
