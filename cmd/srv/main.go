@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,11 +13,16 @@ import (
 	"wb-test/pkg/db"
 )
 
-const dsn string = "root:YaPoc290302@/wb-test?parseTime=true"
+//const dsn string = "root:YaPoc290302@/wb-test?parseTime=true"
 
 func main() {
+	//read config variables
+	cfg := LoadEnvVariables()
+
 	//open DB
-	appDB, err := db.NewDB(dsn)
+	dbURL := fmt.Sprintf("%s:%s@/%s?parseTime=true", cfg.MyUser, cfg.MyPassword, cfg.MyDB)
+
+	appDB, err := db.NewDB(dbURL)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -24,9 +30,9 @@ func main() {
 
 	//server setup and start
 	App := &app.Application{
-		Addr:   "localhost:8080",
+		Addr:   cfg.ServerAddr,
 		DB:     appDB,
-		Secret: "SecretYouShouldHide",
+		Secret: cfg.Secret,
 	}
 	srv := http.Server{
 		Addr:    App.Addr,
