@@ -10,7 +10,9 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"reflect"
 	"strconv"
+	"strings"
 	"time"
 	"wb-test/pkg/models"
 )
@@ -92,7 +94,7 @@ func (app *Application) SignIn(w http.ResponseWriter, r *http.Request) {
 
 		//look up for requested user
 		//get from DB
-		if userLoader, err := app.DB.GetLoader(username); err == nil {
+		if userLoader, err := app.DB.GetLoaderByName(username); err == nil {
 			//compare pass with pass in table
 			err := bcrypt.CompareHashAndPassword([]byte(userLoader.Password), []byte(password))
 			if err != nil {
@@ -197,7 +199,7 @@ func (app *Application) ProfilePage(w http.ResponseWriter, r *http.Request) {
 
 	switch userRole {
 	case "loader":
-		userLoader, err := app.DB.GetLoader(userName)
+		userLoader, err := app.DB.GetLoaderByName(userName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -259,7 +261,9 @@ func (app *Application) ProfilePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) GenerateTasks(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
+	userRole := r.Header.Get("role")
+
+	if userRole != "customer" && userRole != "loader" {
 		numberOfTasks := rand.Intn(10)
 
 		for i := 0; i < numberOfTasks; i++ {
@@ -331,5 +335,144 @@ func (app *Application) GenerateTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) Start(w http.ResponseWriter, r *http.Request) {
+	//check user role
+	userRole := r.Header.Get("role")
+	userName := r.Header.Get("name")
+	log.Println(userRole)
 
+	if userRole == "customer" {
+		if r.Method == "GET" {
+			//find template
+			ts, err := template.ParseFiles("./web/html/start.html")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			//execute html template
+			if err := ts.Execute(w, nil); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		} else {
+			//Start the game
+			loadersIDstr := r.FormValue("loaders")
+			taskIDstr := r.FormValue("task")
+			log.Println(loadersIDstr)
+			log.Println(taskIDstr)
+
+			//loaders IDs convert to []int
+			loadersStr := strings.Split(loadersIDstr, ",")
+			loaders := make([]int, len(loadersStr))
+			for i := 0; i < len(loadersStr); i++ {
+				//if there are spaces
+				loadersStr[i] = strings.Trim(loadersStr[i], " ")
+
+				//convert to int
+				var err error
+				loaders[i], err = strconv.Atoi(loadersStr[i])
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			//task ID convert to int
+			taskID, err := strconv.Atoi(taskIDstr)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			log.Println(loaders, reflect.TypeOf(loaders))
+			log.Println(taskID, reflect.TypeOf(taskID))
+
+			//game
+
+			//loaders map
+			userLoaders := make(map[int]models.Loader)
+
+			//fill loaders map
+			for _, id := range loaders {
+				loader, err := app.DB.GetLoaderByID(id)
+				if err != nil {
+					log.Println("Loader", id, err)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				userLoaders[loader.ID] = *loader
+			}
+
+			//calculate winnable
+			//get customer data from DB
+			userCustomer, err := app.DB.GetCustomer(userName)
+			if err != nil {
+				log.Println("Customer", userName, "||", err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			//get task data from DB
+			task, err := app.DB.GetTask(taskID)
+			log.Println("TASK", task)
+			if err != nil {
+				log.Println("task", err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			var LoadersPrice int
+			var CarryWeight float64
+
+			for i := 0; i < len(loaders); i++ {
+				//calculate price
+				userLoader := userLoaders[loaders[i]]
+				LoadersPrice += userLoader.Salary
+
+				//calculate carry weight by loaders
+				if userLoader.Drunk {
+					log.Println(float64(userLoader.MaxWeight), float64(userLoader.Fatigue)/100, float64(userLoader.Fatigue+50)/100)
+					CarryWeight += float64(userLoader.MaxWeight) * ((100 - float64(userLoader.Fatigue)) / 100) * (float64(userLoader.Fatigue+50) / 100)
+				} else {
+					CarryWeight += float64(userLoader.MaxWeight) * ((100 - float64(userLoader.Fatigue)) / 100)
+				}
+
+			}
+
+			//lose the game if customer cant afford the loaders price
+			log.Println(LoadersPrice, userCustomer.StartCapital)
+			if LoadersPrice > userCustomer.StartCapital {
+				if _, err := w.Write([]byte("You lose!")); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+				w.WriteHeader(http.StatusOK)
+
+			} else if float64(task.Weight) > CarryWeight {
+				log.Println(CarryWeight, task.Weight)
+				//lose the game if loaders cant carry weight
+				if _, err := w.Write([]byte("You lose!")); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+				w.WriteHeader(http.StatusOK)
+
+			} else {
+				//win the game
+				if _, err := w.Write([]byte("You win!")); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+				w.WriteHeader(http.StatusOK)
+			}
+
+			//customer change capital
+
+			//change loaders fatigue
+
+			//update loaders win done tasks
+
+		}
+	} else if userRole == "loader" {
+		http.Error(w, "You aren't a customer", http.StatusBadRequest)
+		return
+	}
 }

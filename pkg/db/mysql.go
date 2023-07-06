@@ -43,13 +43,27 @@ func (r *Repository) InsertLoader(loader models.Loader) (int, error) {
 	return int(id), nil
 }
 
-// GetLoader return Loader struct by a username from table
-func (r *Repository) GetLoader(username string) (*models.Loader, error) {
+// GetLoaderByName return Loader struct by a username from table
+func (r *Repository) GetLoaderByName(username string) (*models.Loader, error) {
 	stmt := `select ID, MaxWeight, Drunk, Fatigue, Salary, username, password from loadertable where username = ?`
 
 	row := r.db.QueryRow(stmt, username)
 	var loader models.Loader
 	if err := row.Scan(&loader.ID, &loader.MaxWeight, &loader.Drunk, &loader.Fatigue, &loader.Salary, &loader.Username, &loader.Password); err != nil {
+		return nil, err
+	}
+
+	return &loader, nil
+}
+
+// GetLoaderByID return Loader struct by an ID from table
+func (r *Repository) GetLoaderByID(id int) (*models.Loader, error) {
+	stmt := `select ID, MaxWeight, Drunk, Fatigue, Salary, username from loadertable where id = ?`
+
+	row := r.db.QueryRow(stmt, id)
+
+	var loader models.Loader
+	if err := row.Scan(&loader.ID, &loader.MaxWeight, &loader.Drunk, &loader.Fatigue, &loader.Salary, &loader.Username); err != nil {
 		return nil, err
 	}
 
@@ -121,7 +135,15 @@ func (r *Repository) InsertTask(task models.Task) error {
 
 // GetTask return a one task by ID
 func (r *Repository) GetTask(id int) (*models.Task, error) {
-	return nil, nil
+	stmt := `select ID, name, weight from tasks where ID = ?`
+	var task models.Task
+
+	row := r.db.QueryRow(stmt, id)
+
+	if err := row.Scan(&task.ID, &task.Item, &task.Weight); err != nil {
+		return nil, err
+	}
+	return &task, nil
 }
 
 // GetTaskAvailable return all task that available

@@ -18,6 +18,7 @@ func (app *Application) Routes() *mux.Router {
 	rMux.Handle("/me", app.RequireAuth(http.HandlerFunc(app.ProfilePage)))
 
 	//generate OR view tasks for loader OR customer
+	rMux.HandleFunc("/tasks", app.GenerateTasks).Methods("POST")
 	rMux.Handle("/tasks", app.RequireAuth(http.HandlerFunc(app.GenerateTasks)))
 
 	// start the game
