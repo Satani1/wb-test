@@ -437,7 +437,6 @@ func (app *Application) Start(w http.ResponseWriter, r *http.Request) {
 				} else {
 					CarryWeight += float64(userLoader.MaxWeight) * ((100 - float64(userLoader.Fatigue)) / 100)
 				}
-
 			}
 
 			//lose the game if customer cant afford the loaders price
@@ -446,30 +445,43 @@ func (app *Application) Start(w http.ResponseWriter, r *http.Request) {
 				if _, err := w.Write([]byte("You lose!")); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 				}
-				w.WriteHeader(http.StatusOK)
 
 			} else if float64(task.Weight) > CarryWeight {
 				log.Println(CarryWeight, task.Weight)
 				//lose the game if loaders cant carry weight
 				if _, err := w.Write([]byte("You lose!")); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
 				}
-				w.WriteHeader(http.StatusOK)
 
 			} else {
 				//win the game
 				if _, err := w.Write([]byte("You win!")); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
 				}
-				w.WriteHeader(http.StatusOK)
 			}
 
 			//customer change capital
+			if err := app.DB.UpdateCustomer(userCustomer.ID, userCustomer.StartCapital-LoadersPrice); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
 			//change loaders fatigue
-
 			//update loaders win done tasks
+			for id, loader := range userLoaders {
+				if err := app.DB.UpdateLoader(loader.Fatigue+20, id); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := app.DB.UpdateTask(taskID, id); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
 
+			w.WriteHeader(http.StatusOK)
 		}
 	} else if userRole == "loader" {
 		http.Error(w, "You aren't a customer", http.StatusBadRequest)
