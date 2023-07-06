@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
 type Repository struct {
@@ -10,7 +10,7 @@ type Repository struct {
 }
 
 func NewDB(url string) (*Repository, error) {
-	db, err := sql.Open("mysql", url)
+	db, err := sql.Open("postgres", url)
 	if err != nil {
 		return nil, err
 	}

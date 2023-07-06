@@ -1,18 +1,15 @@
 version: '3.9'
 
 services:
-  db_mysql:
-    image: mysql:latest
-    hostname: db_mysql
-    restart: always
+  postgres:
+    image: postgres:latest
     env_file:
       - ./db.env
     volumes:
-      - ./db_dump/db-dump.sql:/docker-entrypoint-initdb.d/db-dump.sql
-      - db:/var/lib/mysql
+      - ./db_dump/db-dump.sql:/docker-entrypoint-initdb.d/init-user-db.sh
+      - db-data:/var/lib/postgresql/data
     ports:
-      - "3366:3306"
-    command: --init-file /data/application/init.sql
+      - "5432:5432"
 
   back:
     build: .
@@ -23,8 +20,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db_mysql
+      - postgres
 
 volumes:
-  db:
+  db-data:
     driver: local

@@ -12,20 +12,13 @@ import (
 
 func (app *Application) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//if r.Method == "POST" {
-		//	next.ServeHTTP(w, r)
-		//} else {
-		//
-		//}
-		log.Println(r.Method)
-		log.Println("Middleware exec")
+		log.Println("Middleware in")
 		// Get cookie off request
 		tokenString, err := r.Cookie("Authorization")
 		if err != nil {
 			http.Error(w, "Need Authorization", http.StatusUnauthorized)
 			return
 		}
-		log.Println(tokenString.Value)
 
 		// Decode/validate
 		token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
@@ -71,6 +64,6 @@ func (app *Application) RequireAuth(next http.Handler) http.Handler {
 			http.Error(w, "token invalid", http.StatusUnauthorized)
 			return
 		}
-		log.Println("Middleware exec again")
+		log.Println("Middleware quit")
 	})
 }

@@ -1,43 +1,57 @@
 create table customertable
 (
-    ID       int auto_increment
-        primary key,
-    capital  int default 10000 not null,
-    tasks    int               null,
-    username varchar(30)       null,
-    password varchar(100)      null
+    id       serial
+        constraint customertable_pk
+            primary key,
+    capital  integer default 10000 not null,
+    username varchar,
+    password varchar
 );
+
+alter table customertable
+    owner to postgres;
+
+
 
 create table loadertable
 (
-    ID        int auto_increment
-        primary key,
-    MaxWeight int        default 30    not null,
-    Drunk     tinyint(1) default 0     not null,
-    Fatigue   int        default 0     not null,
-    Salary    int        default 10000 not null,
-    username  varchar(30)              not null,
-    password  varchar(100)             null
+    id        serial
+        constraint loadertable_pk
+            primary key,
+    maxweight integer default 20    not null,
+    drunk     boolean default false not null,
+    fatigue   integer default 0     not null,
+    salary    integer default 10000 not null,
+    username  varchar,
+    password  varchar
 );
 
+alter table loadertable
+    owner to postgres;
+
+create table tasks
+(
+    id     serial
+        constraint tasks_pk
+            primary key,
+    name   varchar            not null,
+    weight integer default 10 not null,
+    done   integer default 0  not null
+);
+
+alter table tasks
+    owner to postgres;
 
 
 create table donetasks
 (
-    task_ID   int not null,
-    loader_ID int not null,
-    constraint l_ID
-        foreign key (loader_ID) references loadertable (ID),
-    constraint t_ID
-        foreign key (task_ID) references tasks (ID)
+    task_id   integer not null
+        constraint donetasks_tasks_id_fk
+            references tasks,
+    loader_id integer not null
+        constraint donetasks_loadertable_id_fk
+            references loadertable
 );
 
-create table tasks
-(
-    ID     int auto_increment
-        primary key,
-    name   varchar(20)    not null,
-    weight int default 10 not null,
-    done   int default 0  not null
-);
-
+alter table donetasks
+    owner to postgres;

@@ -6,13 +6,12 @@ import (
 )
 
 type Config struct {
-	ServerAddr string `mapstructure:"SERVER_ADDRESS"`
-	MyDB       string `mapstructure:"MYSQL_DB"`
-	MyUser     string `mapstructure:"MYSQL_USER"`
-	MyPassword string `mapstructure:"MYSQL_PASSWORD"`
-	MyHost     string `mapstructure:"MYSQL_HOST"`
-	MyPort     string `mapstructure:"MYSQL_PORT"`
-	Secret     string `mapstructure:"SECRET"`
+	ServerAddr       string `mapstructure:"SERVER_ADDRESS"`
+	PostgresDB       string `mapstructure:"POSTGRES_DB"`
+	PostgresUser     string `mapstructure:"POSTGRES_USER"`
+	PostgresPassword string `mapstructure:"POSTGRES_PASSWORD"`
+	PostgresHost     string `mapstructure:"POSTGRES_HOST"`
+	Secret           string `mapstructure:"SECRET"`
 }
 
 func LoadEnvVariables() *Config {
