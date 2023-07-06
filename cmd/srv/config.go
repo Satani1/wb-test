@@ -10,6 +10,8 @@ type Config struct {
 	MyDB       string `mapstructure:"MYSQL_DB"`
 	MyUser     string `mapstructure:"MYSQL_USER"`
 	MyPassword string `mapstructure:"MYSQL_PASSWORD"`
+	MyHost     string `mapstructure:"MYSQL_HOST"`
+	MyPort     string `mapstructure:"MYSQL_PORT"`
 	Secret     string `mapstructure:"SECRET"`
 }
 

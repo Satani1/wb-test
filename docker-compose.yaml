@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+  db_mysql:
+    image: mysql:latest
+    hostname: db_mysql
+    restart: always
+    env_file:
+      - ./db.env
+    volumes:
+      - ./db_dump/db-dump.sql:/docker-entrypoint-initdb.d/db-dump.sql
+      - db:/var/lib/mysql
+    ports:
+      - "3366:3306"
+    command: --init-file /data/application/init.sql
+
+  back:
+    build: .
+    container_name: wb-test
+    restart: on-failure
+    env_file:
+      - ./config.env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db_mysql
+
+volumes:
+  db:
+    driver: local

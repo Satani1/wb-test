@@ -20,7 +20,7 @@ func main() {
 	cfg := LoadEnvVariables()
 
 	//open DB
-	dbURL := fmt.Sprintf("%s:%s@/%s?parseTime=true", cfg.MyUser, cfg.MyPassword, cfg.MyDB)
+	dbURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", cfg.MyUser, cfg.MyPassword, cfg.MyHost, cfg.MyPort, cfg.MyDB)
 
 	appDB, err := db.NewDB(dbURL)
 	if err != nil {
